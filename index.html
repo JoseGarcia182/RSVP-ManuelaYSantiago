@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manuela & Santiago — RSVP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #f9f5ef;
+      --cream-dark: #f0e9de;
+      --gold: #b8975a;
+      --gold-light: #d4b483;
+      --sage: #8a9e8a;
+      --text: #3a3028;
+      --text-light: #7a6e66;
+      --border: #ddd3c5;
+      --error: #c0392b;
+      --success: #4a7c59;
+      --white: #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      font-weight: 300;
+      background-color: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .page { display: none !important; }
+    .page.active { display: block !important; }
+    #page-admin.active { display: flex !important; }
+
+    /* ── ORNAMENT ── */
+    .ornament {
+      display: flex; align-items: center; gap: 12px; justify-content: center;
+      color: var(--gold); font-size: 10px; letter-spacing: 4px; margin: 20px 0;
+    }
+    .ornament::before, .ornament::after {
+      content: ''; flex: 1; max-width: 80px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+    .ornament::after { background: linear-gradient(90deg, var(--gold), transparent); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh; display: grid; place-items: center; padding: 60px 24px;
+      position: relative;
+      background:
+        radial-gradient(ellipse 120% 80% at 50% 0%, rgba(184,151,90,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 100% 60% at 80% 100%, rgba(138,158,138,0.08) 0%, transparent 50%),
+        var(--cream);
+    }
+    .hero::before, .hero::after {
+      content: ''; position: fixed; width: 200px; height: 200px;
+      border: 1px solid rgba(184,151,90,0.18); pointer-events: none;
+    }
+    .hero::before { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+    .hero::after  { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+    .hero-inner { max-width: 680px; width: 100%; text-align: center; animation: fadeUp 1.2s ease both; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); }
+    }
+
+    .eyebrow {
+      font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+      letter-spacing: 6px; text-transform: uppercase; color: var(--gold); margin-bottom: 24px;
+    }
+    .couple-name {
+      font-family: 'Cormorant Garamond', serif; font-weight: 300;
+      font-size: clamp(56px, 10vw, 96px); line-height: 1; color: var(--text); letter-spacing: -1px;
+    }
+    .couple-name em {
+      display: block; font-style: italic; color: var(--gold);
+      font-size: clamp(28px, 5vw, 48px); font-weight: 300; letter-spacing: 2px; margin: 8px 0;
+    }
+    .date-line { font-size: 13px; letter-spacing: 3px; color: var(--text-light); text-transform: uppercase; margin-top: 28px; }
+    .hero-message {
+      font-family: 'Cormorant Garamond', serif; font-size: 18px; line-height: 1.7;
+      color: var(--text-light); margin-top: 32px; font-style: italic;
+    }
+    .scroll-cta {
+      display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
+      margin-top: 52px; cursor: pointer; text-decoration: none; color: var(--gold);
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase; transition: opacity 0.2s;
+    }
+    .scroll-cta:hover { opacity: 0.7; }
+    .scroll-cta svg { animation: bounce 2s infinite; }
+
+    /* ── FORM SECTION ── */
+    #form-section { min-height: 100vh; display: grid; place-items: center; padding: 80px 24px; }
+    .section-wrapper { max-width: 600px; width: 100%; }
+    .section-title {
+      font-family: 'Cormorant Garamond', serif; font-size: clamp(32px, 5vw, 48px);
+      font-weight: 300; text-align: center; color: var(--text);
+    }
+    .section-subtitle { text-align: center; font-size: 14px; color: var(--text-light); letter-spacing: 1px; margin-top: 8px; }
+
+    .card {
+      background: var(--white); border: 1px solid var(--border); border-radius: 2px;
+      padding: 48px 40px; margin-top: 40px; box-shadow: 0 4px 40px rgba(58,48,40,0.06);
+      animation: fadeUp 0.8s ease both;
+    }
+
+    /* ── FORM ELEMENTS ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 24px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); font-weight: 400; }
+    label .req { color: var(--gold); margin-left: 2px; }
+
+    input[type="text"], input[type="tel"], input[type="password"], select, textarea {
+      width: 100%; padding: 12px 16px; background: var(--cream); border: 1px solid var(--border);
+      border-radius: 1px; font-family: 'Jost', sans-serif; font-size: 14px; font-weight: 300;
+      color: var(--text); outline: none; transition: border-color 0.25s, box-shadow 0.25s;
+      -webkit-appearance: none; appearance: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,151,90,0.1);
+    }
+    input.has-error, select.has-error, textarea.has-error {
+      border-color: var(--error); box-shadow: 0 0 0 3px rgba(192,57,43,0.08);
+    }
+    .err { font-size: 11px; color: var(--error); letter-spacing: 0.5px; min-height: 16px; }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b8975a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+    }
+    textarea { resize: none; min-height: 88px; }
+
+    .guest-toggle { display: flex; gap: 12px; }
+    .tog {
+      flex: 1; padding: 11px; border: 1px solid var(--border); background: var(--cream);
+      font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 400; color: var(--text-light);
+      cursor: pointer; letter-spacing: 1px; transition: all 0.2s; border-radius: 1px;
+    }
+    .tog.active { background: var(--gold); border-color: var(--gold); color: var(--white); }
+
+    #companion-fields { display: none; grid-column: 1 / -1; }
+    #companion-fields.visible { display: contents; }
+    .comp-divider { grid-column: 1 / -1; padding: 12px 0 4px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      display: block; width: 100%; padding: 16px; background: var(--text); color: var(--cream);
+      font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 4px;
+      text-transform: uppercase; border: none; cursor: pointer; border-radius: 1px;
+      transition: background 0.25s, transform 0.15s; margin-top: 28px;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--gold); }
+    .btn-primary:active { transform: scale(0.99); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary .sp {
+      display: none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto;
+    }
+    .btn-primary.loading .btn-text { display: none; }
+    .btn-primary.loading .sp { display: block; }
+
+    .btn-ghost {
+      padding: 10px 28px; border: 1px solid var(--border); background: transparent;
+      font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-light); cursor: pointer; border-radius: 1px; transition: all 0.2s; margin-top: 20px;
+    }
+    .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── SUCCESS ── */
+    .success-wrap { display: none; text-align: center; padding: 32px; animation: fadeUp 0.6s ease; }
+    .success-wrap.show { display: block; }
+    .check-circle {
+      width: 56px; height: 56px; margin: 0 auto 20px; background: rgba(74,124,89,0.1);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--success);
+    }
+    .success-wrap h3 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; }
+    .success-wrap p  { font-size: 14px; color: var(--text-light); margin-top: 8px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--text); color: var(--cream); padding: 12px 24px; font-size: 13px;
+      letter-spacing: 1px; border-radius: 2px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      transition: transform 0.35s ease, opacity 0.35s ease; opacity: 0; z-index: 9999; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.err  { background: var(--error); }
+
+    /* ══════════════════════════════════
+       ADMIN PAGE
+    ══════════════════════════════════ */
+    #page-admin {
+      min-height: 100vh; background: var(--cream-dark);
+      display: flex; flex-direction: column; align-items: center; padding: 60px 24px 80px;
+    }
+
+    /* Login */
+    .login-card {
+      max-width: 400px; width: 100%; background: var(--white); border: 1px solid var(--border);
+      padding: 48px 40px; box-shadow: 0 4px 40px rgba(58,48,40,0.06);
+      animation: fadeUp 0.7s ease both; text-align: center;
+    }
+    .lock-icon {
+      width: 48px; height: 48px; margin: 0 auto 24px; background: rgba(184,151,90,0.1);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold);
+    }
+    .login-card h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; margin-bottom: 8px; }
+    .login-card p  { font-size: 13px; color: var(--text-light); margin-bottom: 28px; }
+    .login-err     { font-size: 12px; color: var(--error); margin-top: 10px; min-height: 18px; }
+
+    /* Dashboard */
+    .dashboard { width: 100%; max-width: 900px; animation: fadeIn 0.5s ease; }
+
+    .admin-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px;
+    }
+    .admin-header h1 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; }
+    .btn-logout {
+      padding: 8px 20px; border: 1px solid var(--border); background: transparent;
+      font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-light); cursor: pointer; border-radius: 1px; transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat  {
+      background: var(--white); border: 1px solid var(--border); padding: 24px; text-align: center;
+      animation: fadeUp 0.6s ease both;
+    }
+    .stat:nth-child(2) { animation-delay: .08s; }
+    .stat:nth-child(3) { animation-delay: .16s; }
+    .stat-n { font-family: 'Cormorant Garamond', serif; font-size: 52px; font-weight: 300; color: var(--gold); line-height: 1; }
+    .stat-l { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-light); margin-top: 6px; }
+
+    /* Table */
+    .tbl-wrap { background: var(--white); border: 1px solid var(--border); overflow: hidden; animation: fadeUp 0.7s ease both; }
+    .tbl-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .tbl-toolbar span { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); }
+    .search {
+      padding: 8px 14px; border: 1px solid var(--border); background: var(--cream);
+      font-family: 'Jost', sans-serif; font-size: 13px; color: var(--text); outline: none;
+      border-radius: 1px; width: 220px; transition: border-color 0.2s;
+    }
+    .search:focus { border-color: var(--gold); }
+
+    .tbl-scroll { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+    .tbl-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+    .tbl-scroll::-webkit-scrollbar-track { background: var(--cream); }
+    .tbl-scroll::-webkit-scrollbar-thumb { background: var(--gold-light); border-radius: 2px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left; padding: 12px 16px; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--text-light); font-weight: 400;
+      border-bottom: 1px solid var(--border); background: var(--cream);
+      position: sticky; top: 0;
+    }
+    td { padding: 13px 16px; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(249,245,239,0.6); }
+
+    .badge { display: inline-block; font-size: 10px; padding: 2px 10px; border-radius: 10px; letter-spacing: 1px; }
+    .b-si    { background: rgba(74,124,89,0.1);  color: var(--success); }
+    .b-no    { background: rgba(138,158,138,0.15); color: var(--sage); }
+    .b-diet  { background: rgba(184,151,90,0.12); color: var(--gold); }
+    .muted   { color: var(--text-light); }
+
+    .tbl-empty { padding: 48px; text-align: center; color: var(--text-light); font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 18px; }
+    .tbl-loading { padding: 48px; text-align: center; color: var(--text-light); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; }
+
+    /* Actions row */
+    .actions { display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end; }
+
+    .btn-excel {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 13px 28px; background: var(--gold); color: var(--white);
+      font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 400;
+      letter-spacing: 3px; text-transform: uppercase; border: none; cursor: pointer;
+      border-radius: 1px; transition: background 0.2s, transform 0.15s;
+    }
+    .btn-excel:hover:not(:disabled) { background: #a07840; }
+    .btn-excel:active { transform: scale(0.98); }
+    .btn-excel:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-refresh {
+      display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px;
+      background: transparent; border: 1px solid var(--border); font-family: 'Jost', sans-serif;
+      font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-light);
+      cursor: pointer; border-radius: 1px; transition: all 0.2s;
+    }
+    .btn-refresh:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-refresh svg { transition: transform 0.4s; }
+    .btn-refresh:hover svg { transform: rotate(180deg); }
+
+    /* Footer */
+    footer { text-align: center; padding: 40px 24px; font-size: 11px; letter-spacing: 2px; color: var(--text-light); border-top: 1px solid var(--border); }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .card, .login-card { padding: 32px 24px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+      .stats { grid-template-columns: 1fr; }
+      .admin-header { flex-direction: column; gap: 16px; align-items: flex-start; }
+      .search { width: 100%; }
+      .tbl-toolbar { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════
+     PAGE GUEST (public)
+════════════════════════ -->
+<div id="page-guest" class="page active">
+  <section class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Con amor, los invitamos</p>
+      <h1 class="couple-name">Manuela <em>&amp;</em> Santiago</h1>
+      <p class="date-line">Sábado 12 · Diciembre · 2026 &nbsp;·&nbsp; Estancia El Cazador</p>
+      <div class="ornament">✦</div>
+      <p class="hero-message">El amor no hace el mundo redondo;<br>el amor es lo que hace que valga la pena el viaje.</p>
+      <a class="scroll-cta" href="#form-section">
+        Confirmar asistencia
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 3v10M3 9l5 5 5-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <section id="form-section">
+    <div class="section-wrapper">
+      <p class="eyebrow">RSVP</p>
+      <h2 class="section-title">Confirmá tu asistencia</h2>
+      <p class="section-subtitle">Completá el formulario antes del 1 de mayo de 2025</p>
+
+      <div class="card">
+        <!-- SUCCESS -->
+        <div class="success-wrap" id="success-wrap">
+          <div class="check-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12l4.5 4.5L19 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>¡Gracias por confirmar!</h3>
+          <p>Nos alegra mucho contar con tu presencia en este día tan especial.</p>
+          <button class="btn-ghost" onclick="resetForm()">Agregar otro invitado</button>
+        </div>
+
+        <!-- FORM -->
+        <form id="rsvp-form" novalidate>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="nombre">Nombre <span class="req">*</span></label>
+              <input type="text" id="nombre" autocomplete="given-name" placeholder="Manuela" maxlength="60" />
+              <span class="err" id="e-nombre"></span>
+            </div>
+            <div class="form-group">
+              <label for="apellido">Apellido <span class="req">*</span></label>
+              <input type="text" id="apellido" autocomplete="family-name" placeholder="García" maxlength="60" />
+              <span class="err" id="e-apellido"></span>
+            </div>
+            <div class="form-group full">
+              <label for="telefono">Teléfono <span class="req">*</span></label>
+              <input type="tel" id="telefono" autocomplete="tel" placeholder="9 11 1234 5678" maxlength="20" />
+              <span class="err" id="e-telefono"></span>
+            </div>
+            <div class="form-group full">
+              <label for="dieta">Restricciones alimentarias</label>
+              <select id="dieta">
+                <option value="">Sin restricciones</option>
+                <option value="Vegetariano">Vegetariano</option>
+                <option value="Vegano">Vegano</option>
+                <option value="Sin gluten">Sin gluten (celíaco)</option>
+                <option value="Sin lactosa">Sin lactosa</option>
+                <option value="Otro">Otro (indicar en notas)</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label for="notas">Notas adicionales</label>
+              <textarea id="notas" placeholder="Alergias, necesidades especiales..." maxlength="300"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>¿Venís con acompañante?</label>
+              <div class="guest-toggle">
+                <button type="button" class="tog active" id="btn-no" onclick="setGuest(false)">No</button>
+                <button type="button" class="tog" id="btn-si" onclick="setGuest(true)">Sí</button>
+              </div>
+            </div>
+            <div id="companion-fields">
+              <p class="comp-divider">Datos del acompañante</p>
+              <div class="form-group">
+                <label for="ac-nombre">Nombre <span class="req">*</span></label>
+                <input type="text" id="ac-nombre" placeholder="Nombre" maxlength="60" />
+                <span class="err" id="e-ac-nombre"></span>
+              </div>
+              <div class="form-group">
+                <label for="ac-apellido">Apellido <span class="req">*</span></label>
+                <input type="text" id="ac-apellido" placeholder="Apellido" maxlength="60" />
+                <span class="err" id="e-ac-apellido"></span>
+              </div>
+              <div class="form-group full">
+                <label for="ac-dieta">Restricciones alimentarias</label>
+                <select id="ac-dieta">
+                  <option value="">Sin restricciones</option>
+                  <option value="Vegetariano">Vegetariano</option>
+                  <option value="Vegano">Vegano</option>
+                  <option value="Sin gluten">Sin gluten (celíaco)</option>
+                  <option value="Sin lactosa">Sin lactosa</option>
+                  <option value="Otro">Otro (indicar en notas)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" id="submit-btn">
+            <span class="btn-text">Confirmar asistencia</span>
+            <span class="sp"></span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer>Manuela &amp; Santiago &mdash; 12 · 12 · 2026 &nbsp;&nbsp;<a href="#/admin" style="color:var(--border);font-size:10px;text-decoration:none;letter-spacing:1px" title="Admin">·</a></footer>
+</div>
+
+
+<!-- ════════════════════════
+     PAGE ADMIN
+════════════════════════ -->
+<div id="page-admin" class="page">
+
+  <!-- LOGIN -->
+  <div class="login-card" id="admin-login">
+    <div class="lock-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h2>Panel de administración</h2>
+    <p>Acceso exclusivo para los novios</p>
+    <div class="form-group" style="text-align:left">
+      <label for="admin-pass">Contraseña</label>
+      <input type="password" id="admin-pass" placeholder="••••••••••••" autocomplete="current-password" />
+    </div>
+    <p class="login-err" id="login-err"></p>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">
+      <span class="btn-text">Ingresar</span>
+      <span class="sp"></span>
+    </button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard" style="display:none">
+
+    <div class="admin-header">
+      <div>
+        <p class="eyebrow" style="margin-bottom:4px">Panel de administración</p>
+        <h1>Manuela &amp; Santiago</h1>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="s-total">—</div><div class="stat-l">Confirmaciones</div></div>
+      <div class="stat"><div class="stat-n" id="s-personas">—</div><div class="stat-l">Total personas</div></div>
+      <div class="stat"><div class="stat-n" id="s-dietas">—</div><div class="stat-l">Con restricciones</div></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <div class="tbl-toolbar">
+        <span>Lista de invitados</span>
+        <input class="search" type="text" id="search" placeholder="Buscar invitado..." oninput="filterTable()" />
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Nombre</th><th>Apellido</th><th>Teléfono</th>
+              <th>Restricción</th><th>Acomp.</th><th>Acompañante</th>
+              <th>Restr. Acomp.</th><th>Notas</th><th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="10" class="tbl-loading">Cargando invitados…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-refresh" onclick="loadGuests()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Actualizar
+      </button>
+      <button class="btn-excel" id="btn-excel" onclick="exportExcel()" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M14 2v6h6M8 13l2.5 2.5L8 18M12 13h4M12 15.5h3M12 18h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Descargar Excel
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const C = {
+  SCRIPT_URL:     'https://script.google.com/macros/s/AKfycbyWPBpuZM0L4j5q4SfwwFQ7-uDSCr3QxVyb1syzoXHbhVSkwCq1ixg87gE9F1rITqgF/exec',
+  API_KEY:        'AIzaSyCKUiMpbWYiG4UFndh6OfR5PGn7auZbaMI',
+  SPREADSHEET_ID: '1CRG15Wo2i0W1_6WN6_QPKCaULf_WC2V7YWsnztwIM5I',
+  SHEET_NAME:     'invitados',   // <-- cambiá si tu sheet tiene otro nombre
+  ADMIN_PASS:     'SofiaYMartin',
+  SESSION_KEY:    'sm_admin_v1'
+};
+
+// ══════════════════════════════════════════
+// ROUTING
+// ══════════════════════════════════════════
+function route() {
+  if (window.location.hash === '#/admin') {
+    show('page-admin');
+    isLoggedIn() ? showDash() : showLogin();
+  } else {
+    show('page-guest');
+  }
+}
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+window.addEventListener('hashchange', route);
+window.addEventListener('DOMContentLoaded', route);
+window.addEventListener('load', route);
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function isLoggedIn() { return sessionStorage.getItem(C.SESSION_KEY) === '1'; }
+
+function showLogin() {
+  document.getElementById('admin-login').style.display = 'block';
+  document.getElementById('dashboard').style.display   = 'none';
+}
+function showDash() {
+  document.getElementById('admin-login').style.display = 'none';
+  document.getElementById('dashboard').style.display   = 'block';
+  loadGuests();
+}
+
+function doLogin() {
+  const pass = document.getElementById('admin-pass').value;
+  const errEl = document.getElementById('login-err');
+  if (pass === C.ADMIN_PASS) {
+    sessionStorage.setItem(C.SESSION_KEY, '1');
+    errEl.textContent = '';
+    showDash();
+  } else {
+    errEl.textContent = 'Contraseña incorrecta. Intentá nuevamente.';
+    const inp = document.getElementById('admin-pass');
+    inp.classList.add('has-error');
+    setTimeout(() => inp.classList.remove('has-error'), 1500);
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(C.SESSION_KEY);
+  showLogin();
+  document.getElementById('admin-pass').value = '';
+}
+
+// Enter en login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && window.location.hash === '#/admin' && !isLoggedIn()) doLogin();
+});
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function toast(msg, isErr = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ══════════════════════════════════════════
+// GUEST FORM
+// ══════════════════════════════════════════
+let withGuest = false;
+
+function setGuest(val) {
+  withGuest = val;
+  document.getElementById('btn-si').classList.toggle('active',  val);
+  document.getElementById('btn-no').classList.toggle('active', !val);
+  document.getElementById('companion-fields').classList.toggle('visible', val);
+  if (!val) { clrErr('ac-nombre'); clrErr('ac-apellido'); }
+}
+
+function gv(id)  { return document.getElementById(id).value.trim(); }
+function hn(n)   { return n.length >= 2 && /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s'\-]+$/.test(n); }
+function hp(p)   { return /^[\d\s\+\-\(\)]{7,20}$/.test(p); }
+
+function setErr(f, msg) {
+  const el  = document.getElementById(f);
+  const err = document.getElementById('e-' + f);
+  if (err) err.textContent = msg;
+  if (el)  el.classList.toggle('has-error', !!msg);
+}
+function clrErr(f) { setErr(f, ''); }
+
+function sanitize(s) {
+  return String(s).replace(/[<>'"&]/g, c => ({'<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;','&':'&amp;'}[c]));
+}
+
+function validate() {
+  let ok = true;
+  const n = gv('nombre');
+  if (!n)       { setErr('nombre',  'Ingresá tu nombre'); ok=false; }
+  else if(!hn(n)){ setErr('nombre', 'Solo letras, mín. 2 caracteres'); ok=false; }
+  else clrErr('nombre');
+
+  const a = gv('apellido');
+  if (!a)       { setErr('apellido',  'Ingresá tu apellido'); ok=false; }
+  else if(!hn(a)){ setErr('apellido', 'Solo letras, mín. 2 caracteres'); ok=false; }
+  else clrErr('apellido');
+
+  const t = gv('telefono');
+  if (!t)       { setErr('telefono',  'Ingresá tu teléfono'); ok=false; }
+  else if(!hp(t)){ setErr('telefono', 'Formato inválido'); ok=false; }
+  else clrErr('telefono');
+
+  if (withGuest) {
+    const an = gv('ac-nombre');
+    if (!an)        { setErr('ac-nombre',  'Ingresá el nombre'); ok=false; }
+    else if(!hn(an)){ setErr('ac-nombre', 'Solo letras, mín. 2 caracteres'); ok=false; }
+    else clrErr('ac-nombre');
+
+    const aa = gv('ac-apellido');
+    if (!aa)        { setErr('ac-apellido',  'Ingresá el apellido'); ok=false; }
+    else if(!hn(aa)){ setErr('ac-apellido', 'Solo letras, mín. 2 caracteres'); ok=false; }
+    else clrErr('ac-apellido');
+  }
+  return ok;
+}
+
+document.getElementById('rsvp-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (!validate()) return;
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.classList.add('loading');
+
+  const payload = {
+    timestamp:   new Date().toLocaleString('es-AR'),
+    nombre:      sanitize(gv('nombre')),
+    apellido:    sanitize(gv('apellido')),
+    telefono:    sanitize(gv('telefono')),
+    dieta:       gv('dieta') || 'Sin restricciones',
+    notas:       sanitize(gv('notas')),
+    acompanante: withGuest ? 'Sí' : 'No',
+    ac_nombre:   withGuest ? sanitize(gv('ac-nombre'))   : '',
+    ac_apellido: withGuest ? sanitize(gv('ac-apellido')) : '',
+    ac_dieta:    withGuest ? (gv('ac-dieta') || 'Sin restricciones') : ''
+  };
+
+  try {
+    await fetch(C.SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    showSuccess();
+  } catch (_) {
+    toast('Error al enviar. Verificá tu conexión.', true);
+  } finally {
+    btn.disabled = false; btn.classList.remove('loading');
+  }
+});
+
+function showSuccess() {
+  document.getElementById('rsvp-form').style.display = 'none';
+  document.getElementById('success-wrap').classList.add('show');
+}
+function resetForm() {
+  document.getElementById('rsvp-form').reset();
+  document.getElementById('rsvp-form').style.display = 'block';
+  document.getElementById('success-wrap').classList.remove('show');
+  setGuest(false);
+  ['nombre','apellido','telefono','ac-nombre','ac-apellido'].forEach(clrErr);
+}
+
+// ══════════════════════════════════════════
+// ADMIN — Google Sheets reader
+// ══════════════════════════════════════════
+let allGuests = [];
+
+async function loadGuests() {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '<tr><td colspan="10" class="tbl-loading">Cargando invitados…</td></tr>';
+
+  try {
+    const enc = encodeURIComponent(C.SHEET_NAME);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${C.SPREADSHEET_ID}/values/${enc}!A2:J?key=${C.API_KEY}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error.message);
+
+    allGuests = (data.values || []).map((r, i) => ({
+      i:           i + 1,
+      timestamp:   r[0]||'', nombre:     r[1]||'', apellido:    r[2]||'',
+      telefono:    r[3]||'', dieta:      r[4]||'', notas:       r[5]||'',
+      acompanante: r[6]||'', ac_nombre:  r[7]||'', ac_apellido: r[8]||'', ac_dieta: r[9]||''
+    }));
+
+    renderTable(allGuests);
+    renderStats(allGuests);
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="10" class="tbl-empty">Error: ${esc(err.message)}</td></tr>`;
+    toast('No se pudieron cargar los invitados.', true);
+  }
+}
+
+function renderStats(g) {
+  document.getElementById('s-total').textContent    = g.length;
+  document.getElementById('s-personas').textContent = g.reduce((a,x) => a + (x.acompanante==='Sí' ? 2 : 1), 0);
+  document.getElementById('s-dietas').textContent   =
+    g.filter(x => x.dieta && x.dieta !== 'Sin restricciones').length +
+    g.filter(x => x.ac_dieta && x.ac_dieta !== 'Sin restricciones').length;
+}
+
+function renderTable(guests) {
+  const tbody = document.getElementById('tbody');
+  const excel = document.getElementById('btn-excel');
+
+  if (!guests.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="tbl-empty">Aún no hay confirmaciones.</td></tr>';
+    excel.disabled = true; return;
+  }
+  excel.disabled = false;
+
+  tbody.innerHTML = guests.map(g => `
+    <tr>
+      <td class="muted">${g.i}</td>
+      <td>${esc(g.nombre)}</td>
+      <td>${esc(g.apellido)}</td>
+      <td>${esc(g.telefono)}</td>
+      <td>${g.dieta && g.dieta!=='Sin restricciones' ? `<span class="badge b-diet">${esc(g.dieta)}</span>` : '<span class="muted">—</span>'}</td>
+      <td><span class="badge ${g.acompanante==='Sí'?'b-si':'b-no'}">${g.acompanante||'No'}</span></td>
+      <td>${g.ac_nombre ? esc(g.ac_nombre)+' '+esc(g.ac_apellido) : '<span class="muted">—</span>'}</td>
+      <td>${g.ac_dieta && g.ac_dieta!=='Sin restricciones' ? `<span class="badge b-diet">${esc(g.ac_dieta)}</span>` : '<span class="muted">—</span>'}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(g.notas)}">${esc(g.notas)||'<span class="muted">—</span>'}</td>
+      <td class="muted" style="font-size:12px">${esc(g.timestamp)}</td>
+    </tr>
+  `).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+}
+
+function filterTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  renderTable(allGuests.filter(g =>
+    [g.nombre, g.apellido, g.telefono, g.dieta, g.ac_nombre, g.ac_apellido]
+    .some(v => v.toLowerCase().includes(q))
+  ));
+}
+
+// ══════════════════════════════════════════
+// EXPORT EXCEL
+// ══════════════════════════════════════════
+function exportExcel() {
+  if (!allGuests.length) return;
+
+  const rows = allGuests.map(g => ({
+    'Nombre':                  g.nombre,
+    'Apellido':                g.apellido,
+    'Teléfono':                g.telefono,
+    'Restricción Alimentaria': g.dieta,
+    'Notas':                   g.notas,
+    'Acompañante':             g.acompanante,
+    'Nombre Acompañante':      g.ac_nombre,
+    'Apellido Acompañante':    g.ac_apellido,
+    'Restricción Acompañante': g.ac_dieta,
+    'Fecha Confirmación':      g.timestamp
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:16},{wch:16},{wch:22},{wch:26},{wch:32},{wch:12},{wch:20},{wch:20},{wch:26},{wch:22}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Invitados');
+
+  const fecha = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Invitados_Sofia_Martin_${fecha}.xlsx`);
+  toast('Excel descargado correctamente ✓');
+}
+</script>
+</body>
+</html>
